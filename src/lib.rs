@@ -1,13 +1,16 @@
 use std::str::FromStr;
-
-use worker::{postgres_tls::PassthroughTls, *};
+use tokio_postgres::{config::Host, Config};
+use worker::{
+    console_log, event, postgres_tls::PassthroughTls, wasm_bindgen_futures, Context, Env, Request,
+    Response, SecureTransport, Socket,
+};
 
 #[event(fetch)]
 async fn main(_req: Request, env: Env, _ctx: Context) -> anyhow::Result<Response> {
     // Get connection details
     let db_connection_str = env.secret("DB_CONN_STR")?;
-    let config = tokio_postgres::Config::from_str(&db_connection_str.to_string())?;
-    let tokio_postgres::config::Host::Tcp(host) = &config.get_hosts()[0] else {
+    let config = Config::from_str(&db_connection_str.to_string())?;
+    let Host::Tcp(host) = &config.get_hosts()[0] else {
         return Err(anyhow::anyhow!("No host found"));
     };
     let port = config.get_ports()[0];
